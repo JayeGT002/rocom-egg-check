@@ -4,3 +4,6 @@
 /ui-draft/node_modules/
 /source-assets/
 /.archive/
+/.agents/
+/.cursor/
+/.claude/

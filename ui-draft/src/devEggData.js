@@ -31,11 +31,13 @@ export const DevEggData = {
     if (numericKeyword && keyword.length < 3) keyword = keyword.padStart(3, '0')
     const minTier = Math.max(1, filter.minTier || 1)
     const maxTier = Math.min(10, filter.maxTier || 10)
+    const weight = Math.max(0, Math.round(filter.weight ?? 0))
     const matchingFamilies = keyword && !numericKeyword ? matchingEvolutionIds(keyword) : null
 
     return initialForms.filter((pet) => {
       const tier = pet.egg_weight.tier
       if (tier < minTier || tier > maxTier) return false
+      if (weight > 0 && (weight < pet.egg_weight.min || weight > pet.egg_weight.max)) return false
       if (keyword) {
         if (numericKeyword) {
           if (pet.number !== keyword) return false

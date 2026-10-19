@@ -33,11 +33,12 @@ export interface Pet {
   attributes: string[];
 }
 
-/** QueryFilter selects initial forms by name or number, tier, egg group, and attribute. */
+/** QueryFilter selects initial forms by name or number, tier, egg weight, egg group, and attribute. */
 export interface QueryFilter {
   keyword: string;
   minTier: number;
   maxTier: number;
+  weight: number;
   eggGroups: string[];
   attributes: string[];
 }

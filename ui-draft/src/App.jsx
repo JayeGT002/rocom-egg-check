@@ -1,10 +1,114 @@
 import { useEffect, useRef, useState } from 'react'
-import { Button, Input, RocoTheme } from 'rocokingdom-ui'
+import { Button, Input, RocoTheme, Select } from 'rocokingdom-ui'
 import { attributeColors, getEggGroupColor, getTierColor } from './colors'
 import petPortraits from './petPortraits.json'
 import { EggData } from './mygo'
 import OffspringCalculator, { SAVED_CALCULATIONS_KEY } from './OffspringCalculator'
 import { version as appVersion } from '../package.json'
+
+const FAVORITES_KEY = 'rocom-egg-check.favorites'
+const RECENT_QUERIES_KEY = 'rocom-egg-check.recent-queries'
+const RESULT_SORT_KEY = 'rocom-egg-check.result-sort'
+const RECENT_QUERY_LIMIT = 5
+const SORT_OPTIONS = [
+  { value: 'default', label: '默认顺序' },
+  { value: 'number', label: '图鉴编号' },
+  { value: 'name', label: '名称' },
+  { value: 'tier-asc', label: '档位从低到高' },
+  { value: 'tier-desc', label: '档位从高到低' },
+  { value: 'range-asc', label: '蛋重区间从窄到宽' },
+  { value: 'range-desc', label: '蛋重区间从宽到窄' },
+]
+
+function readStoredList(key) {
+  try {
+    const parsed = JSON.parse(window.localStorage.getItem(key) ?? '[]')
+    return Array.isArray(parsed) ? parsed : []
+  } catch {
+    return []
+  }
+}
+
+function saveStoredList(key, value) {
+  try {
+    window.localStorage.setItem(key, JSON.stringify(value))
+  } catch {
+    // Keep the current session usable when browser storage is unavailable.
+  }
+}
+
+function readFavorites() {
+  return readStoredList(FAVORITES_KEY).filter((id) => typeof id === 'string' && id)
+}
+
+function normalizeQuery(query) {
+  if (!query || typeof query !== 'object' || Array.isArray(query)) return null
+  const minTier = Number.isInteger(query.minTier) ? Math.min(10, Math.max(1, query.minTier)) : 1
+  const maxTier = Number.isInteger(query.maxTier) ? Math.min(10, Math.max(1, query.maxTier)) : 10
+  const weight = Number.isFinite(query.weight) ? Math.max(0, Math.round(query.weight)) : 0
+  const sortValues = (values) => Array.isArray(values) ? [...new Set(values.filter((value) => typeof value === 'string' && value))].sort() : []
+  return {
+    keyword: typeof query.keyword === 'string' ? query.keyword.trim() : '',
+    minTier: Math.min(minTier, maxTier),
+    maxTier: Math.max(minTier, maxTier),
+    weight,
+    eggGroups: sortValues(query.eggGroups),
+    attributes: sortValues(query.attributes),
+  }
+}
+
+function queryHasConditions(query) {
+  return Boolean(query.keyword || query.weight || query.minTier > 1 || query.maxTier < 10 || query.eggGroups.length || query.attributes.length)
+}
+
+function readRecentQueries() {
+  const seen = new Set()
+  return readStoredList(RECENT_QUERIES_KEY)
+    .map(normalizeQuery)
+    .filter((query) => {
+      if (!query || !queryHasConditions(query)) return false
+      const key = JSON.stringify(query)
+      if (seen.has(key)) return false
+      seen.add(key)
+      return true
+    })
+    .slice(0, RECENT_QUERY_LIMIT)
+}
+
+function parseWeightGrams(value) {
+  const parsed = Number.parseFloat(value)
+  return Number.isFinite(parsed) && parsed > 0 ? Math.round(parsed * 1000) : 0
+}
+
+function formatWeightInput(grams) {
+  return grams > 0 ? (grams / 1000).toFixed(3) : ''
+}
+
+function describeQuery(query) {
+  const parts = []
+  if (query.keyword) parts.push(query.keyword)
+  if (query.weight > 0) parts.push(`${formatKg(query.weight)}`)
+  if (query.minTier > 1 || query.maxTier < 10) {
+    parts.push(query.minTier === query.maxTier ? `${query.minTier} 档` : `${query.minTier}–${query.maxTier} 档`)
+  }
+  if (query.eggGroups.length) parts.push(query.eggGroups.length === 1 ? query.eggGroups[0] : `${query.eggGroups.length} 个蛋组`)
+  if (query.attributes.length) parts.push(query.attributes.length === 1 ? query.attributes[0] : `${query.attributes.length} 个属性`)
+  return parts.join(' · ')
+}
+
+function sortResults(results, sortBy) {
+  if (sortBy === 'default') return results
+  const byNumber = (first, second) => first.number.localeCompare(second.number)
+  return [...results].sort((first, second) => {
+    if (sortBy === 'number') return byNumber(first, second)
+    if (sortBy === 'name') return first.name.localeCompare(second.name, 'zh-CN')
+    if (sortBy === 'tier-asc') return first.egg_weight.tier - second.egg_weight.tier || byNumber(first, second)
+    if (sortBy === 'tier-desc') return second.egg_weight.tier - first.egg_weight.tier || byNumber(first, second)
+    if (sortBy === 'range-asc') return first.egg_weight.total_range - second.egg_weight.total_range || byNumber(first, second)
+    if (sortBy === 'range-desc') return second.egg_weight.total_range - first.egg_weight.total_range || byNumber(first, second)
+    return 0
+  })
+}
 
 async function getEggDataClient() {
   if (typeof window !== 'undefined' && typeof window.mygo?.call === 'function') return EggData
@@ -26,6 +130,13 @@ function RemixSettingsIcon() {
 
 function RemixCalculatorIcon() {
   return <svg aria-hidden="true" viewBox="0 0 24 24" width="21" height="21" fill="currentColor"><path d="M4 2H20C20.5523 2 21 2.44772 21 3V21C21 21.5523 20.5523 22 20 22H4C3.44772 22 3 21.5523 3 21V3C3 2.44772 3.44772 2 4 2ZM5 4V20H19V4H5ZM7 6H17V10H7V6ZM7 12H9V14H7V12ZM7 16H9V18H7V16ZM11 12H13V14H11V12ZM11 16H13V18H11V16ZM15 12H17V18H15V12Z" /></svg>
+}
+
+function HeartIcon({ filled = false }) {
+  const path = filled
+    ? 'M16.5 3C19.5376 3 22 5.5 22 9C22 16 14.5 20 12 21.5C9.5 20 2 16 2 9C2 5.5 4.5 3 7.5 3C9.35997 3 11 4 12 5C13 4 14.64 3 16.5 3Z'
+    : 'M16.5 3C19.5376 3 22 5.5 22 9C22 16 14.5 20 12 21.5C9.5 20 2 16 2 9C2 5.5 4.5 3 7.5 3C9.35997 3 11 4 12 5C13 4 14.64 3 16.5 3ZM12.9339 18.603C13.8169 18.0498 21 13.8302 21 9C21 6.3528 19.4196 4.5 16.5 4.5C15.024 4.5 13.6214 5.3976 12.8853 6.1836L12 7.1538L11.1147 6.1836C10.3786 5.3976 8.97596 4.5 7.5 4.5C4.58044 4.5 3 6.3528 3 9C3 13.8302 10.1831 18.0498 11.0661 18.603C11.6345 18.9536 12.3655 18.9536 12.9339 18.603Z'
+  return <svg aria-hidden="true" viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d={path} /></svg>
 }
 
 function readPreference(key, fallback) {
@@ -183,9 +294,11 @@ function getPetAttributes(pet) {
   return [pet.attr1, pet.attr2].filter(Boolean)
 }
 
-function EggWeightScale({ weight }) {
+function EggWeightScale({ weight, queryWeight }) {
   const span = Math.max(weight.max - weight.min, 1)
   const toPercent = (value) => Math.min(100, Math.max(0, ((value - weight.min) / span) * 100))
+  const markerVisible = queryWeight > 0 && queryWeight >= weight.min && queryWeight <= weight.max
+  const markerPercent = markerVisible ? toPercent(queryWeight) : 0
   const segmentStyle = (start, end) => {
     const minimumWidth = 0.8
     const left = Math.min(toPercent(start), 100 - minimumWidth)
@@ -196,6 +309,7 @@ function EggWeightScale({ weight }) {
   const hugeStart = toPercent(weight.huge_min)
   const miniRange = `${formatKg(weight.min)} – ${formatKg(weight.mini_max)}`
   const hugeRange = `${formatKg(weight.huge_min)} – ${formatKg(weight.max)}`
+  const queryLabel = markerVisible ? `；查询蛋重 ${formatKg(queryWeight)}` : ''
 
   return (
     <div className="pet-weight">
@@ -205,7 +319,7 @@ function EggWeightScale({ weight }) {
       <div
         className="egg-weight-scale"
         role="img"
-        aria-label={`精灵蛋重量范围 ${formatKg(weight.min)} 到 ${formatKg(weight.max)}；迷你蛋 ${miniRange}；巨大蛋 ${hugeRange}`}
+        aria-label={`精灵蛋重量范围 ${formatKg(weight.min)} 到 ${formatKg(weight.max)}；迷你蛋 ${miniRange}；巨大蛋 ${hugeRange}${queryLabel}`}
         title={`迷你蛋：${miniRange}；巨大蛋：${hugeRange}`}
       >
         <span className="egg-weight-total" />
@@ -213,6 +327,7 @@ function EggWeightScale({ weight }) {
         <span className="egg-weight-segment egg-weight-huge" style={segmentStyle(weight.huge_min, weight.max)} />
         <span className="egg-weight-boundary egg-weight-mini-boundary" style={{ left: `${miniEnd}%` }} />
         <span className="egg-weight-boundary egg-weight-huge-boundary" style={{ left: `${hugeStart}%` }} />
+        {markerVisible && <span className="egg-weight-marker" style={{ left: `${markerPercent}%` }} title={`查询蛋重：${formatKg(queryWeight)}`} />}
       </div>
       <div className="weight-scale-labels"><span>{formatKg(weight.min)}</span><span>{formatKg(weight.max)}</span></div>
       <div className="weight-intervals">
@@ -245,6 +360,16 @@ function App() {
   const [maxTier, setMaxTier] = useState(10)
   const [groups, setGroups] = useState([])
   const [selectedAttributes, setSelectedAttributes] = useState([])
+  const [weightValue, setWeightValue] = useState('')
+  const [favorites, setFavorites] = useState(readFavorites)
+  const [favoritesOnly, setFavoritesOnly] = useState(false)
+  const [recentQueries, setRecentQueries] = useState(readRecentQueries)
+  const [sortBy, setSortBy] = useState(() => {
+    const stored = readPreference(RESULT_SORT_KEY, 'default')
+    return SORT_OPTIONS.some((option) => option.value === stored) ? stored : 'default'
+  })
+  const weightGrams = parseWeightGrams(weightValue)
+  const weightInvalid = weightValue.trim() !== '' && weightGrams === 0
   const hasImmersiveTitleBar = typeof window === 'undefined'
     || !window.mygo
     || window.mygo.platform === 'darwin'
@@ -256,8 +381,11 @@ function App() {
   const [tierRangeDraft, setTierRangeDraft] = useState('')
   const [tierRangeError, setTierRangeError] = useState(false)
   const cancelTierRangeBlur = useRef(false)
+  const pendingTextEdit = useRef(false)
+  const favoritesChecked = useRef(false)
   const hasTierFilter = minTier > 1 || maxTier < 10
-  const hasFilters = Boolean(keyword.trim() || hasTierFilter || groups.length || selectedAttributes.length)
+  const hasQueryConditions = Boolean(keyword.trim() || hasTierFilter || weightGrams || groups.length || selectedAttributes.length)
+  const hasFilters = hasQueryConditions || favoritesOnly
   const notify = (message) => setToast({ id: ++toastSequence.current, message })
 
   useEffect(() => {
@@ -267,6 +395,48 @@ function App() {
     }, 2700)
     return () => window.clearTimeout(timeout)
   }, [toast])
+
+  useEffect(() => {
+    saveStoredList(FAVORITES_KEY, favorites)
+  }, [favorites])
+
+  useEffect(() => {
+    if (favoritesOnly && favorites.length === 0) setFavoritesOnly(false)
+  }, [favoritesOnly, favorites])
+
+  useEffect(() => {
+    if (!eggDataClient || favoritesChecked.current || favorites.length === 0) return undefined
+    let cancelled = false
+    eggDataClient.query({ keyword: '', minTier: 1, maxTier: 10, weight: 0, eggGroups: [], attributes: [] })
+      .then((pets) => {
+        if (cancelled) return
+        favoritesChecked.current = true
+        const knownIds = new Set(pets.map((pet) => pet.id))
+        setFavorites((current) => {
+          const next = current.filter((id) => knownIds.has(id))
+          return next.length === current.length ? current : next
+        })
+      })
+      .catch((error) => console.error('无法校验收藏数据', error))
+    return () => { cancelled = true }
+  }, [eggDataClient, favorites.length])
+
+  useEffect(() => {
+    savePreference(RESULT_SORT_KEY, sortBy)
+  }, [sortBy])
+
+  useEffect(() => {
+    if (!hasQueryConditions) return undefined
+    const timeout = window.setTimeout(() => {
+      if (pendingTextEdit.current) return
+      recordCurrentQuery()
+    }, 1200)
+    return () => window.clearTimeout(timeout)
+  }, [hasQueryConditions, keyword, minTier, maxTier, weightGrams, groups, selectedAttributes])
+
+  useEffect(() => {
+    saveStoredList(RECENT_QUERIES_KEY, recentQueries)
+  }, [recentQueries])
 
   useEffect(() => {
     let cancelled = false
@@ -290,7 +460,7 @@ function App() {
     }
     if (!eggDataClient) return () => { cancelled = true }
 
-    eggDataClient.query({ keyword, minTier, maxTier, eggGroups: groups, attributes: selectedAttributes })
+    eggDataClient.query({ keyword, minTier, maxTier, weight: weightGrams, eggGroups: groups, attributes: selectedAttributes })
       .then((nextResults) => {
         if (!cancelled) setResults(nextResults)
       })
@@ -301,9 +471,12 @@ function App() {
         }
       })
     return () => { cancelled = true }
-  }, [eggDataClient, hasFilters, keyword, minTier, maxTier, groups, selectedAttributes])
+  }, [eggDataClient, hasFilters, keyword, minTier, maxTier, weightGrams, groups, selectedAttributes])
 
-  const resultPetCount = results.length
+  const favoriteIds = new Set(favorites)
+  const visibleResults = favoritesOnly ? results.filter((pet) => favoriteIds.has(pet.id)) : results
+  const displayResults = sortResults(visibleResults, sortBy)
+  const resultPetCount = displayResults.length
   const rangeLeft = ((minTier - 1) / 9) * 100
   const rangeWidth = ((maxTier - minTier) / 9) * 100
   const rangeLabel = minTier === 1 && maxTier === 10
@@ -375,6 +548,40 @@ function App() {
       if (current.includes(attribute)) return current.filter((item) => item !== attribute)
       return [...current, attribute]
     })
+  }
+
+  function commitTextQuery() {
+    pendingTextEdit.current = false
+    recordCurrentQuery()
+  }
+
+  function recordCurrentQuery() {
+    const snapshot = normalizeQuery({ keyword, minTier, maxTier, weight: weightGrams, eggGroups: groups, attributes: selectedAttributes })
+    if (!snapshot || !queryHasConditions(snapshot)) return
+    setRecentQueries((current) => {
+      const key = JSON.stringify(snapshot)
+      if (current.length > 0 && JSON.stringify(current[0]) === key) return current
+      return [snapshot, ...current.filter((item) => JSON.stringify(item) !== key)].slice(0, RECENT_QUERY_LIMIT)
+    })
+  }
+
+  function toggleFavorite(petId) {
+    setFavorites((current) => current.includes(petId) ? current.filter((item) => item !== petId) : [...current, petId])
+  }
+
+  function applyRecentQuery(query) {
+    const normalized = normalizeQuery(query)
+    if (!normalized) return
+    cancelTierRangeBlur.current = true
+    setKeyword(normalized.keyword)
+    setMinTier(normalized.minTier)
+    setMaxTier(normalized.maxTier)
+    setWeightValue(formatWeightInput(normalized.weight))
+    setGroups(normalized.eggGroups)
+    setSelectedAttributes(normalized.attributes)
+    setFavoritesOnly(false)
+    setTierRangeError(false)
+    setIsEditingTierRange(false)
   }
 
   function changeUiScale(event) {
@@ -495,11 +702,58 @@ function App() {
               material="paper"
               size="large"
               value={keyword}
-              onChange={(event) => setKeyword(event.target.value)}
+              onChange={(event) => { pendingTextEdit.current = true; setKeyword(event.target.value) }}
+              onBlur={commitTextQuery}
               placeholder="名称或图鉴编号"
               aria-label="搜索名称或图鉴编号"
               prefix={<SearchIcon />}
             />
+            {favorites.length > 0 && (
+              <div className="search-favorites">
+                <Button
+                  className="favorites-toggle"
+                  material="paper"
+                  size="small"
+                  variant="solid"
+                  aria-pressed={favoritesOnly}
+                  style={{
+                    '--rk-material-background': favoritesOnly ? 'var(--rk-primary)' : 'var(--rk-paper)',
+                    '--rk-material-color': favoritesOnly ? 'var(--rk-on-primary)' : 'var(--rk-on-paper)',
+                  }}
+                  onClick={() => setFavoritesOnly((current) => !current)}
+                >
+                  <HeartIcon filled={favoritesOnly} />
+                  只看收藏
+                  <span className="favorites-count">{favorites.length}</span>
+                </Button>
+              </div>
+            )}
+          </section>
+
+          <section className="filter-section weight-section">
+            <div className="section-heading">
+              <h2>蛋重反查</h2>
+              <Button className="filter-reset" material="paper" variant="text" size="small" disabled={!weightGrams} onClick={() => setWeightValue('')}>重置</Button>
+            </div>
+            <div className="weight-lookup">
+              <Input
+                rootClassName="weight-lookup-input"
+                inputClassName="weight-lookup-control"
+                material="paper"
+                size="middle"
+                type="number"
+                min="0"
+                step="0.001"
+                inputMode="decimal"
+                value={weightValue}
+                onChange={(event) => { pendingTextEdit.current = true; setWeightValue(event.target.value) }}
+                onBlur={commitTextQuery}
+                placeholder="输入蛋重，如 1.437"
+                aria-label="按精灵蛋重量查询，单位千克"
+              />
+              <span className="weight-lookup-unit" aria-hidden="true">kg</span>
+            </div>
+            {weightInvalid && <p className="weight-input-error" role="alert">请输入大于 0 的蛋重</p>}
           </section>
 
           <section className="filter-section tier-section">
@@ -610,6 +864,26 @@ function App() {
               })}
             </div>
           </section>
+
+          {recentQueries.length > 0 && (
+            <section className="filter-section recent-section">
+              <div className="section-heading">
+                <h2>最近查询</h2>
+                <Button className="filter-reset" material="paper" variant="text" size="small" onClick={() => setRecentQueries([])}>清空</Button>
+              </div>
+              <div className="recent-query-list">
+                {recentQueries.map((query) => (
+                  <button
+                    type="button"
+                    className="recent-query"
+                    key={JSON.stringify(query)}
+                    title={describeQuery(query)}
+                    onClick={() => applyRecentQuery(query)}
+                  >{describeQuery(query)}</button>
+                ))}
+              </div>
+            </section>
+          )}
         </aside>
 
         <main className="results-main">
@@ -617,19 +891,31 @@ function App() {
             <div className="initial-empty">
               <img src="/empty-placeholder.png" alt="等待筛选条件的占位图" draggable={false} />
               <h2>选择筛选条件开始查询</h2>
-              <p>从左侧输入名称，或调整档位、蛋组和属性。</p>
+              <p>从左侧输入名称或蛋重，或调整档位、蛋组和属性。</p>
             </div>
           ) : (
             <>
               <header className="results-header">
                 <div><span className="results-kicker">查询结果</span><h2>匹配精灵</h2></div>
-                <div className="results-count"><strong>{resultPetCount}</strong><span>只精灵</span></div>
+                <div className="results-toolbar">
+                  <Select
+                    rootClassName="results-sort"
+                    triggerClassName="results-sort-trigger"
+                    material="paper"
+                    value={sortBy}
+                    onValueChange={setSortBy}
+                    ariaLabel="结果排序"
+                    options={SORT_OPTIONS}
+                  />
+                  <div className="results-count"><strong>{resultPetCount}</strong><span>只精灵</span></div>
+                </div>
               </header>
-              {results.length ? (
+              {displayResults.length ? (
                 <div className="result-grid" role="list">
-                  {results.map((pet) => {
+                  {displayResults.map((pet) => {
                     const tierColor = getTierColor(pet.egg_weight.tier)
                     const petAttributes = getPetAttributes(pet)
+                    const isFavorite = favoriteIds.has(pet.id)
                     return <article className="pet-card" role="listitem" key={pet.id}>
                       <header className="pet-card-header">
                         <div className="pet-card-identity">
@@ -642,17 +928,28 @@ function App() {
                             </div>
                           </div>
                         </div>
-                        <div className="pet-tier" style={{ background: tierColor.background, color: tierColor.foreground }}><strong>{pet.egg_weight.tier} 档</strong><span>{pet.egg_weight.tier_label}</span></div>
+                        <div className="pet-card-aside">
+                          <button
+                            type="button"
+                            className={isFavorite ? 'pet-favorite active' : 'pet-favorite'}
+                            aria-label={isFavorite ? `取消收藏 ${pet.name}` : `收藏 ${pet.name}`}
+                            aria-pressed={isFavorite}
+                            onClick={() => toggleFavorite(pet.id)}
+                          >
+                            <HeartIcon filled={isFavorite} />
+                          </button>
+                          <div className="pet-tier" style={{ background: tierColor.background, color: tierColor.foreground }}><strong>{pet.egg_weight.tier} 档</strong><span>{pet.egg_weight.tier_label}</span></div>
+                        </div>
                       </header>
                       <div className="pet-groups">
                         {pet.egg_groups.map((group) => <span key={`group-${group}`} style={{ background: getEggGroupColor(group), color: '#ffffff' }}>{group}</span>)}
                       </div>
-                      <EggWeightScale weight={pet.egg_weight} />
+                      <EggWeightScale weight={pet.egg_weight} queryWeight={weightGrams} />
                     </article>
                   })}
                 </div>
               ) : (
-                <div className="no-results"><img src="/empty-placeholder.png" alt="没有匹配结果" draggable={false} /><strong>没有找到匹配精灵</strong><span>试试放宽档位范围或减少筛选条件。</span></div>
+                <div className="no-results"><img src="/empty-placeholder.png" alt="没有匹配结果" draggable={false} /><strong>没有找到匹配精灵</strong><span>{favoritesOnly ? '收藏中没有符合当前筛选条件的精灵。' : '试试放宽档位范围或减少筛选条件。'}</span></div>
               )}
             </>
           )}
