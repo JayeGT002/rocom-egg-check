@@ -2,6 +2,14 @@
 
 All notable changes to this project are documented in this file.
 
+## [1.2.0] - 2026-11-14
+
+### Added
+
+- **release:** publish packages from version tags
+- **assets:** add BWIKI avatars for S5 records
+- **data:** include S5 initial forms and non-hatchable records
+
 ## [1.1.4] - 2026-10-13
 
 ### Fixed

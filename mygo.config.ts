@@ -3,7 +3,7 @@ import { defineConfig } from "mygo-cli";
 export default defineConfig({
   name: "Rocom Egg Check",
   identifier: "app.rocomeggcheck.desktop",
-  version: "1.1.4",
+  version: "1.2.0",
   icon: "ui-draft/public/app-icon.png",
   devUrl: "http://127.0.0.1:5173",
   devCommand: "npm --prefix ui-draft run dev",
