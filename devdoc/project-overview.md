@@ -28,6 +28,8 @@
 
 前端使用 React、Vite 和 `rocokingdom-ui`。正式桌面应用由 MyGo 承载 WebView，Go 负责提供查询数据；Vite 开发预览使用本地适配器。
 
+推送 `vX.Y.Z` 版本标签后，GitHub Actions 会构建 macOS arm64/x64 与 Windows x64/arm64，并将安装包、便携版和 SHA-256 校验文件发布到 GitHub Release。手动运行 `Cloud build` 只生成临时构建产物。
+
 ## 开发与打包
 
 - 根目录 `npm run dev` 启动 MyGo 桌面开发环境；`npm run dev:web` 启动普通浏览器预览。

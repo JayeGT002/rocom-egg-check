@@ -2,6 +2,9 @@ name: Cloud build
 
 on:
   workflow_dispatch:
+  push:
+    tags:
+      - 'v*'
 
 permissions:
   contents: read
@@ -17,7 +20,7 @@ jobs:
           - arch: arm64
             label: arm64
           - arch: amd64
-            label: x64
+            label: x86_64
     steps:
       - name: Check out source
         uses: actions/checkout@v7
@@ -90,3 +93,74 @@ jobs:
           if-no-files-found: error
           retention-days: 30
           compression-level: 0
+
+  release:
+    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
+    needs: [macos, windows]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Check out release source
+        uses: actions/checkout@v7
+
+      - name: Download build artifacts
+        uses: actions/download-artifact@v7
+        with:
+          pattern: Rocom-Egg-Check-*
+          path: build/release-input
+          merge-multiple: false
+
+      - name: Prepare release assets and notes
+        shell: bash
+        run: |
+          set -euo pipefail
+          version="${GITHUB_REF_NAME#v}"
+          input="build/release-input"
+          output="build/release-assets"
+          mkdir -p "$output"
+
+          for arch in x86_64 arm64; do
+            dir="$input/Rocom-Egg-Check-macOS-$arch"
+            dmg="$(find "$dir" -maxdepth 1 -type f -iname '*.dmg' -print -quit)"
+            test -n "$dmg"
+            cp "$dmg" "$output/Rocom-Egg-Check-${GITHUB_REF_NAME}-macOS-${arch}.dmg"
+          done
+
+          for arch in x64 arm64; do
+            dir="$input/Rocom-Egg-Check-Windows-$arch"
+            cp "$dir/Rocom Egg Check.exe" "$output/Rocom-Egg-Check-${GITHUB_REF_NAME}-Windows-${arch}-Portable.exe"
+            cp "$dir/Rocom Egg Check Setup ${version}.exe" "$output/Rocom-Egg-Check-${GITHUB_REF_NAME}-Windows-${arch}-Setup.exe"
+          done
+
+          (cd "$output" && sha256sum ./*.dmg ./*.exe > SHA256SUMS.txt)
+
+          awk -v version="$version" '
+            $0 ~ "^## \\[" version "\\]" { found=1; next }
+            found && /^## \[/ { exit }
+            found { print }
+          ' CHANGELOG.md > "$output/RELEASE-NOTES.md"
+          test -s "$output/RELEASE-NOTES.md"
+          cat >> "$output/RELEASE-NOTES.md" <<'EOF'
+
+          ### macOS 安全提示
+
+          macOS 版本使用 ad hoc 签名，未经过 Apple Developer ID 签名或公证。首次打开时，macOS 可能提示无法验证开发者。
+
+          ### 校验和
+
+          下载后可使用附件中的 `SHA256SUMS.txt` 校验文件完整性。
+          EOF
+
+      - name: Publish GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          version="${GITHUB_REF_NAME#v}"
+          gh release create "$GITHUB_REF_NAME" \
+            build/release-assets/*.dmg \
+            build/release-assets/*.exe \
+            build/release-assets/SHA256SUMS.txt \
+            --title "Rocom Egg Check ${version}" \
+            --notes-file build/release-assets/RELEASE-NOTES.md

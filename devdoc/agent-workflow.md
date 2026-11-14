@@ -20,4 +20,4 @@
 1. 提交前对照改动检查文档是否准确、相关链接是否有效，以及新增流程是否已加入索引。
 2. 纯文档任务按用户指示提交并推送，不需要运行应用打包，也不需要为了文档改动单独发布版本。
 3. 应用发布前，先按 Conventional Commits 提交本次产品改动，确保工作区干净；`release.mjs` 需要干净工作区，并根据最新版本标签之后的提交计算版本。
-4. agent 随后运行 `npm run release`，同步版本清单和 `CHANGELOG.md`；检查生成结果，提交版本改动并创建对应版本标签。随后按用户指示触发云端构建，确认构建成功后发布 GitHub Release 并上传产物。版本更新和 changelog 不交由用户手工处理。
+4. agent 随后运行 `npm run release`，同步版本清单和 `CHANGELOG.md`；检查生成结果，提交版本改动并推送提交和对应版本标签。`.github/workflows/cloud-build.yml` 会在标签推送后自动构建 macOS arm64/x64 与 Windows x64/arm64，并创建 GitHub Release、上传安装包和校验文件。手动触发工作流只生成临时构建产物。

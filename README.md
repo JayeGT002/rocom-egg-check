@@ -24,7 +24,7 @@ npm run build
 
 MyGo 将应用输出到 `build/windows-amd64/`，包含可执行文件和安装程序。前端位于 `ui-draft/`，Go 查询逻辑位于 `main.go`。普通浏览器的 Vite 预览会使用开发适配器，正式 MyGo 应用通过类型化绑定调用 Go。
 
-云端构建通过 GitHub Actions 的 `Cloud build` 工作流手动触发（Actions → Cloud build → Run workflow），分别生成 macOS arm64/x64 与 Windows x64/arm64 产物，并保存为 30 天有效的 workflow artifacts。工作流不会因提交、推送或打标签自动运行，也不会自动发布 GitHub Release；macOS 产物使用 ad hoc 签名，未经过开发者证书签名或公证。
+GitHub Actions 的 `Cloud build` 工作流可手动触发以生成临时构建产物；推送版本标签（如 `v1.2.0`）时，工作流会构建 macOS arm64/x64 与 Windows x64/arm64，并自动创建 GitHub Release，附上 macOS DMG、Windows 安装版和便携版以及 SHA-256 校验文件。macOS 产物使用 ad hoc 签名，未经过开发者证书签名或公证。
 
 ## 版本与变更日志
 
@@ -34,14 +34,14 @@ MyGo 将应用输出到 `build/windows-amd64/`，包含可执行文件和安装�
 - `fix: 修正编号搜索`：提升修订版本号。
 - `feat!: 调整数据文件格式`：提升主版本号。也可在提交正文中写 `BREAKING CHANGE:`。
 
-首次启用时，先将当前 1.0.0 内容提交到 Git，并为这个基线创建标签 `v1.0.0`。之后每次准备发布时运行：
+每次准备发布时先按 Conventional Commits 提交产品改动，再运行：
 
 ```powershell
 npm run release:dry-run
 npm run release
 ```
 
-脚本会依据基线标签之后的提交类型计算版本号，生成日志条目，并同步更新根目录及 `ui-draft/` 的版本清单和锁文件，以及 `mygo.config.ts`。检查生成的改动并提交后，为该发布提交创建对应标签（例如 `v1.1.0`），供下一次发布作为起点。该流程在本地 Git 仓库运行，不依赖 GitHub。
+脚本会依据最新版本标签之后的提交类型计算版本号，生成日志条目，并同步更新根目录及 `ui-draft/` 的版本清单和锁文件，以及 `mygo.config.ts`。检查生成的改动并提交后，推送提交和对应标签（例如 `v1.2.0`）；GitHub Actions 会据此构建四种平台版本并创建 GitHub Release。标签也是下一次版本计算的起点。
 
 ## 依赖与素材
 
@@ -49,15 +49,15 @@ UI 使用 [Roco Kingdom UI](https://github.com/rookie-orange/rocokingdom-ui)。�
 
 ### 更新图鉴数据
 
-`data/pets.json` 由 [rocom-wiki-data](https://github.com/JayeGT002/rocom-wiki-data) 的 `Catalog.lua` 生成，不再手工维护宠物数据。先克隆或更新上游仓库，然后运行：
+`data/pets.json` 由 [rocom-wiki-data](https://github.com/JayeGT002/rocom-wiki-data) 的 `Catalog.lua` 与 `S5Season.lua` 生成，不再手工维护宠物数据。常规图鉴导入有完整蛋重区间的记录；S5 导入初始形态，包括上游没有蛋重区间、标记为无法孵蛋的记录。另有一条无蛋重图鉴记录作为补充数据。先克隆或更新上游仓库，然后运行：
 
 ```sh
 npm run data:import -- --source /path/to/rocom-wiki-data
 ```
 
-脚本复用上游的 Lua 数据解析器和蛋组名称表，导入有完整蛋重区间的记录，并生成应用需要的蛋重间隔、属性和进化链。当前上游中没有完整 `egg_size` 的记录会跳过；源仓库提交号和 `Catalog.lua` SHA-256 会写入 JSON 的 `metadata.source`。可加 `--dry-run` 只查看导入数量、不改文件。
+脚本复用上游的 Lua 数据解析器和蛋组名称表，生成应用需要的蛋重间隔、属性和进化链；来源提交号及两个 Lua 文件的 SHA-256 会写入 JSON 元数据。可加 `--dry-run` 只查看导入数量、不改文件。
 
-“难度档位”是应用展示字段，不在 WIKI 数据中。转换脚本根据蛋重总区间派生该值，并用当前 578 条记录各相邻档位区间的中点保持已有档位结果稳定；原始蛋重边界仍直接取自上游。
+“难度档位”是应用展示字段，不在 WIKI 数据中。转换脚本根据固定的蛋重总区间阈值派生该值；原始蛋重边界仍直接取自上游。
 
 构建只打包 `data/pets.json`、前端页面及 `ui-draft/public/` 中使用的素材。`source-assets/` 保存原始素材供后续维护，不会被打进应用。
 
