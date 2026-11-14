@@ -49,7 +49,7 @@ type Pet struct {
 	Stage       int       `json:"stage"`
 	EggGroups   []string  `json:"egg_groups"`
 	EggGroupIDs []int     `json:"egg_group_ids"`
-	EggWeight   EggWeight `json:"egg_weight"`
+	EggWeight   *EggWeight `json:"egg_weight"`
 	Attributes  []string  `json:"attributes"`
 }
 
@@ -129,7 +129,7 @@ func (data *EggData) Query(filter QueryFilter) []Pet {
 
 	results := make([]Pet, 0)
 	for _, pet := range data.pets {
-		if pet.EggWeight.Tier < minTier || pet.EggWeight.Tier > maxTier {
+		if pet.EggWeight != nil && (pet.EggWeight.Tier < minTier || pet.EggWeight.Tier > maxTier) {
 			continue
 		}
 		if keyword != "" {

@@ -18111,6 +18111,24 @@
       ]
     },
     {
+      "id": "pet_000622",
+      "name": "果实立方人",
+      "number": "466",
+      "evolution_id": "evolution_0c2babc864dc",
+      "stage": 1,
+      "egg_groups": [
+        "无法孵蛋"
+      ],
+      "egg_group_ids": [
+        1
+      ],
+      "egg_weight": null,
+      "attributes": [
+        "机械",
+        "草"
+      ]
+    },
+    {
       "id": "pet_000625",
       "name": "烈焰狂战士",
       "number": "218",
@@ -18320,6 +18338,332 @@
       },
       "attributes": [
         "火"
+      ]
+    },
+    {
+      "id": "pet_000638",
+      "name": "小冥龙",
+      "number": "469",
+      "evolution_id": "evolution_s5_pet_000638",
+      "stage": 1,
+      "egg_groups": [
+        "无法孵蛋"
+      ],
+      "egg_group_ids": [
+        1
+      ],
+      "egg_weight": null,
+      "attributes": [
+        "幽",
+        "龙"
+      ]
+    },
+    {
+      "id": "pet_000640",
+      "name": "地银链",
+      "number": "471",
+      "evolution_id": "evolution_s5_pet_000640",
+      "stage": 1,
+      "egg_groups": [
+        "无法孵蛋"
+      ],
+      "egg_group_ids": [
+        1
+      ],
+      "egg_weight": null,
+      "attributes": [
+        "地"
+      ]
+    },
+    {
+      "id": "pet_000643",
+      "name": "沉金兽",
+      "number": "474",
+      "evolution_id": "evolution_s5_pet_000643",
+      "stage": 1,
+      "egg_groups": [
+        "无法孵蛋"
+      ],
+      "egg_group_ids": [
+        1
+      ],
+      "egg_weight": null,
+      "attributes": [
+        "电"
+      ]
+    },
+    {
+      "id": "pet_000646",
+      "name": "乐乐鲨",
+      "number": "477",
+      "evolution_id": "evolution_s5_pet_000646",
+      "stage": 1,
+      "egg_groups": [
+        "海洋组"
+      ],
+      "egg_group_ids": [
+        13
+      ],
+      "egg_weight": {
+        "min": 350,
+        "mini_max": 361,
+        "huge_min": 869,
+        "max": 880,
+        "mini_interval": 11,
+        "huge_interval": 11,
+        "mini_tiers": 2,
+        "huge_tiers": 2,
+        "total_range": 530,
+        "tier": 3,
+        "tier_label": "简单",
+        "interval_count_1g": 12
+      },
+      "attributes": [
+        "水"
+      ]
+    },
+    {
+      "id": "pet_000649",
+      "name": "蛋包蛋",
+      "number": "479",
+      "evolution_id": "evolution_s5_pet_000649",
+      "stage": 1,
+      "egg_groups": [
+        "动物组",
+        "天空组"
+      ],
+      "egg_group_ids": [
+        6,
+        5
+      ],
+      "egg_weight": {
+        "min": 445,
+        "mini_max": 458,
+        "huge_min": 1059,
+        "max": 1072,
+        "mini_interval": 13,
+        "huge_interval": 13,
+        "mini_tiers": 2,
+        "huge_tiers": 2,
+        "total_range": 627,
+        "tier": 3,
+        "tier_label": "简单",
+        "interval_count_1g": 14
+      },
+      "attributes": [
+        "普通",
+        "萌"
+      ]
+    },
+    {
+      "id": "pet_000651",
+      "name": "蟹蟹椰",
+      "number": "481",
+      "evolution_id": "evolution_s5_pet_000651",
+      "stage": 1,
+      "egg_groups": [
+        "妖精组",
+        "两栖组"
+      ],
+      "egg_group_ids": [
+        7,
+        3
+      ],
+      "egg_weight": {
+        "min": 210,
+        "mini_max": 217,
+        "huge_min": 553,
+        "max": 560,
+        "mini_interval": 7,
+        "huge_interval": 7,
+        "mini_tiers": 1,
+        "huge_tiers": 1,
+        "total_range": 350,
+        "tier": 2,
+        "tier_label": "极简单",
+        "interval_count_1g": 8
+      },
+      "attributes": [
+        "水",
+        "草"
+      ]
+    },
+    {
+      "id": "pet_000653",
+      "name": "鲸羽",
+      "number": "483",
+      "evolution_id": "evolution_s5_pet_000653",
+      "stage": 1,
+      "egg_groups": [
+        "海洋组",
+        "妖精组"
+      ],
+      "egg_group_ids": [
+        13,
+        7
+      ],
+      "egg_weight": {
+        "min": 700,
+        "mini_max": 716,
+        "huge_min": 1464,
+        "max": 1480,
+        "mini_interval": 16,
+        "huge_interval": 16,
+        "mini_tiers": 2,
+        "huge_tiers": 2,
+        "total_range": 780,
+        "tier": 4,
+        "tier_label": "较简单",
+        "interval_count_1g": 17
+      },
+      "attributes": [
+        "幻",
+        "冰"
+      ]
+    },
+    {
+      "id": "pet_000655",
+      "name": "豆粒鹅",
+      "number": "485",
+      "evolution_id": "evolution_s5_pet_000655",
+      "stage": 1,
+      "egg_groups": [
+        "动物组",
+        "天空组"
+      ],
+      "egg_group_ids": [
+        6,
+        5
+      ],
+      "egg_weight": {
+        "min": 280,
+        "mini_max": 288,
+        "huge_min": 656,
+        "max": 664,
+        "mini_interval": 8,
+        "huge_interval": 8,
+        "mini_tiers": 1,
+        "huge_tiers": 1,
+        "total_range": 384,
+        "tier": 2,
+        "tier_label": "极简单",
+        "interval_count_1g": 9
+      },
+      "attributes": [
+        "冰"
+      ]
+    },
+    {
+      "id": "pet_000657",
+      "name": "西瓜虫",
+      "number": "487",
+      "evolution_id": "evolution_s5_pet_000657",
+      "stage": 1,
+      "egg_groups": [
+        "昆虫组",
+        "植物组"
+      ],
+      "egg_group_ids": [
+        4,
+        8
+      ],
+      "egg_weight": {
+        "min": 210,
+        "mini_max": 218,
+        "huge_min": 592,
+        "max": 600,
+        "mini_interval": 8,
+        "huge_interval": 8,
+        "mini_tiers": 1,
+        "huge_tiers": 1,
+        "total_range": 390,
+        "tier": 2,
+        "tier_label": "极简单",
+        "interval_count_1g": 9
+      },
+      "attributes": [
+        "虫",
+        "草"
+      ]
+    },
+    {
+      "id": "pet_000659",
+      "name": "小剪影",
+      "number": "489",
+      "evolution_id": "evolution_s5_pet_000659",
+      "stage": 1,
+      "egg_groups": [
+        "妖精组",
+        "魔力组"
+      ],
+      "egg_group_ids": [
+        7,
+        12
+      ],
+      "egg_weight": {
+        "min": 95,
+        "mini_max": 100,
+        "huge_min": 355,
+        "max": 360,
+        "mini_interval": 5,
+        "huge_interval": 5,
+        "mini_tiers": 1,
+        "huge_tiers": 1,
+        "total_range": 265,
+        "tier": 2,
+        "tier_label": "极简单",
+        "interval_count_1g": 6
+      },
+      "attributes": [
+        "幽"
+      ]
+    },
+    {
+      "id": "pet_000661",
+      "name": "滴溜豚",
+      "number": "491",
+      "evolution_id": "evolution_s5_pet_000661",
+      "stage": 1,
+      "egg_groups": [
+        "海洋组"
+      ],
+      "egg_group_ids": [
+        13
+      ],
+      "egg_weight": {
+        "min": 525,
+        "mini_max": 539,
+        "huge_min": 1187,
+        "max": 1200,
+        "mini_interval": 14,
+        "huge_interval": 13,
+        "mini_tiers": 2,
+        "huge_tiers": 2,
+        "total_range": 675,
+        "tier": 3,
+        "tier_label": "简单",
+        "interval_count_1g": 15
+      },
+      "attributes": [
+        "毒",
+        "幻"
+      ]
+    },
+    {
+      "id": "pet_000710",
+      "name": "阿布",
+      "number": "493",
+      "evolution_id": "evolution_s5_pet_000710",
+      "stage": 1,
+      "egg_groups": [
+        "无法孵蛋"
+      ],
+      "egg_group_ids": [
+        1
+      ],
+      "egg_weight": null,
+      "attributes": [
+        "龙"
       ]
     }
   ],
@@ -19411,11 +19755,50 @@
     ],
     "evolution_e35badf7e825": [
       "pet_000630"
+    ],
+    "evolution_0c2babc864dc": [
+      "pet_000622"
+    ],
+    "evolution_s5_pet_000638": [
+      "pet_000638"
+    ],
+    "evolution_s5_pet_000640": [
+      "pet_000640"
+    ],
+    "evolution_s5_pet_000643": [
+      "pet_000643"
+    ],
+    "evolution_s5_pet_000646": [
+      "pet_000646"
+    ],
+    "evolution_s5_pet_000649": [
+      "pet_000649"
+    ],
+    "evolution_s5_pet_000651": [
+      "pet_000651"
+    ],
+    "evolution_s5_pet_000653": [
+      "pet_000653"
+    ],
+    "evolution_s5_pet_000655": [
+      "pet_000655"
+    ],
+    "evolution_s5_pet_000657": [
+      "pet_000657"
+    ],
+    "evolution_s5_pet_000659": [
+      "pet_000659"
+    ],
+    "evolution_s5_pet_000661": [
+      "pet_000661"
+    ],
+    "evolution_s5_pet_000710": [
+      "pet_000710"
     ]
   },
   "metadata": {
-    "total_pets": 578,
-    "total_chains": 255,
+    "total_pets": 591,
+    "total_chains": 268,
     "tier_definition": "界面难度档位 1–10 按 total_range 分桶；阈值取原有相邻档位范围的中点。",
     "egg_groups": [
       "巨灵组",
@@ -19431,7 +19814,8 @@
       "魔力组",
       "海洋组",
       "飞龙组",
-      "机械组"
+      "机械组",
+      "无法孵蛋"
     ],
     "mapping_method": "蛋重边界直接来自 Catalog.lua egg_size；间隔、区间计数与界面难度档位由转换脚本派生。",
     "note": "重量单位为克(g),显示时除以1000转换为kg,保留3位小数",
@@ -19443,6 +19827,22 @@
       "license": "CC BY-SA 4.0",
       "license_url": "https://creativecommons.org/licenses/by-sa/4.0/"
     },
-    "attribute_normalization": "从上游 types 字段复制，移除末尾的“系”。"
+    "attribute_normalization": "从上游 types 字段复制，移除末尾的“系”。",
+    "s5_source": {
+      "repository": "https://github.com/JayeGT002/rocom-wiki-data",
+      "commit": "7716154be25d96e5cd50d4c1084f0ea0ff6932dc",
+      "file": "data/seasons/S5Season.lua",
+      "license": "CC BY-SA 4.0",
+      "license_url": "https://creativecommons.org/licenses/by-sa/4.0/"
+    },
+    "supplemental_catalog_records": [
+      {
+        "id": "pet_000622",
+        "repository": "https://github.com/JayeGT002/rocom-wiki-data",
+        "commit": "7716154be25d96e5cd50d4c1084f0ea0ff6932dc",
+        "file": "data/wiki_modules/Pets/data/Catalog.lua",
+        "license": "CC BY-SA 4.0"
+      }
+    ]
   }
 }

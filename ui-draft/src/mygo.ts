@@ -29,7 +29,7 @@ export interface Pet {
   stage: number;
   egg_groups: string[];
   egg_group_ids: number[];
-  egg_weight: EggWeight;
+  egg_weight: EggWeight | null;
   attributes: string[];
 }
 

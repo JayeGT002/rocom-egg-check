@@ -153,7 +153,11 @@ img { -webkit-user-drag: none; user-select: none; }
 .pet-tier { width: 60px; height: 60px; flex: 0 0 60px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; padding: 4px; border-radius: var(--rk-radius); text-align: center; }
 .pet-tier strong { width: 100%; color: inherit; font-size: 15px; text-align: center; }
 .pet-tier span { width: 100%; color: inherit; font-size: 13px; text-align: center; }
+.pet-tier-unavailable { background: color-mix(in srgb, var(--rk-on-paper) 10%, var(--rk-paper-muted)); color: color-mix(in srgb, var(--rk-on-paper) 72%, transparent); }
 .pet-weight { display: flex; flex-direction: column; gap: 9px; padding-top: 11px; border-top: 1px solid color-mix(in srgb, var(--rk-on-paper) 13%, transparent); }
+.egg-weight-unavailable { min-height: 59px; justify-content: center; gap: 5px; color: color-mix(in srgb, var(--rk-on-paper) 72%, transparent); }
+.egg-weight-unavailable strong { font-size: 15px; }
+.egg-weight-unavailable span { font-size: 13px; }
 .weight-range-heading { display: flex; align-items: baseline; justify-content: flex-start; gap: 8px; }
 .weight-range-heading .weight-label { color: color-mix(in srgb, var(--rk-on-paper) 58%, transparent); font-size: 13px; }
 .egg-weight-scale { position: relative; height: 14px; margin: 0 7px; border-radius: 999px; background: var(--rk-paper-muted); }

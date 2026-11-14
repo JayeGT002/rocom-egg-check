@@ -14,6 +14,7 @@ export const eggGroupColors = {
   两栖组: '#E67E22',
   软体组: '#7F8C8D',
   飞龙组: '#34495E',
+  无法孵蛋: '#6B7280',
 }
 
 export const attributeColors = {

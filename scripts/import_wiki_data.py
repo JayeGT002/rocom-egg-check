@@ -17,8 +17,10 @@ from typing import Any
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 CATALOG_RELATIVE_PATH = Path("data/wiki_modules/Pets/data/Catalog.lua")
+S5_SEASON_RELATIVE_PATH = Path("data/seasons/S5Season.lua")
 LICENSE_URL = "https://creativecommons.org/licenses/by-sa/4.0/"
 REPOSITORY_URL = "https://github.com/JayeGT002/rocom-wiki-data"
+UNWEIGHTED_CATALOG_IDS = {"pet_000622"}
 
 # Keep the existing app-visible difficulty bands stable. The upstream catalog
 # supplies egg weights, while this app-specific 1–10 classification is derived
@@ -110,14 +112,23 @@ def make_egg_weight(egg_size: dict[str, Any], pet_id: str) -> dict[str, Any]:
 
 def generate(source_root: Path) -> tuple[dict[str, Any], int]:
     catalog_path = source_root / CATALOG_RELATIVE_PATH
+    s5_path = source_root / S5_SEASON_RELATIVE_PATH
     if not catalog_path.is_file():
         raise ValueError(f"找不到上游图鉴文件：{catalog_path}")
+    if not s5_path.is_file():
+        raise ValueError(f"找不到上游 S5 赛季文件：{s5_path}")
 
     lua_parser, egg_group_names = load_upstream_modules(source_root)
+    egg_group_names = dict(egg_group_names)
+    egg_group_names[1] = "无法孵蛋"
     try:
         catalog = lua_parser(catalog_path.read_text(encoding="utf-8")).parse()
     except (OSError, ValueError) as exc:
         raise ValueError(f"解析上游 Catalog.lua 失败：{exc}") from exc
+    try:
+        s5_season = lua_parser(s5_path.read_text(encoding="utf-8")).parse()
+    except (OSError, ValueError) as exc:
+        raise ValueError(f"解析上游 S5Season.lua 失败：{exc}") from exc
 
     pets = []
     skipped_without_egg_size = 0
@@ -132,11 +143,12 @@ def generate(source_root: Path) -> tuple[dict[str, Any], int]:
 
         egg_size = source_pet.get("egg_size")
         if egg_size is None:
-            skipped_without_egg_size += 1
-            continue
-        if not isinstance(egg_size, dict):
+            if pet_id not in UNWEIGHTED_CATALOG_IDS:
+                skipped_without_egg_size += 1
+                continue
+        elif not isinstance(egg_size, dict):
             raise ValueError(f"{pet_id}.egg_size 必须是 table")
-        if not {"min", "mini_max", "huge_min", "max"}.issubset(egg_size):
+        if egg_size is not None and not {"min", "mini_max", "huge_min", "max"}.issubset(egg_size):
             raise ValueError(f"{pet_id}.egg_size 缺少边界字段：{egg_size!r}")
 
         number = source_pet.get("number")
@@ -171,12 +183,65 @@ def generate(source_root: Path) -> tuple[dict[str, Any], int]:
             "stage": stage,
             "egg_groups": [egg_group_names[group_id] for group_id in group_ids],
             "egg_group_ids": group_ids,
-            "egg_weight": make_egg_weight(egg_size, pet_id),
+            "egg_weight": make_egg_weight(egg_size, pet_id) if egg_size is not None else None,
             "attributes": attributes,
         }
         pets.append(pet)
         stage_by_id[pet_id] = stage
         chains.setdefault(evolution_id, []).append(pet_id)
+
+    s5_initial_count = 0
+    for pet_id, source_pet in s5_season.items():
+        if not (isinstance(pet_id, str) and pet_id.startswith("pet_") and isinstance(source_pet, dict)):
+            continue
+        stage = require_integer(source_pet.get("stage"), "stage", pet_id)
+        if stage != 1:
+            continue
+        if pet_id in seen_ids:
+            raise ValueError(f"Catalog.lua 与 S5Season.lua 包含重复宠物 ID：{pet_id}")
+
+        number = source_pet.get("number")
+        if number is None:
+            raise ValueError(f"{pet_id}.number 缺失")
+        group_ids = source_pet.get("egg_group") or []
+        if not isinstance(group_ids, list):
+            raise ValueError(f"{pet_id}.egg_group 必须是列表")
+        group_ids = [require_integer(group_id, "egg_group[]", pet_id) for group_id in group_ids]
+        unknown_groups = [group_id for group_id in group_ids if group_id not in egg_group_names]
+        if unknown_groups:
+            raise ValueError(f"{pet_id} 包含上游未定义的蛋组 ID：{unknown_groups}")
+
+        raw_types = source_pet.get("types") or []
+        if not isinstance(raw_types, list) or any(not isinstance(item, str) for item in raw_types):
+            raise ValueError(f"{pet_id}.types 必须是字符串列表")
+        attributes = [item[:-1] if item.endswith("系") else item for item in raw_types]
+        egg_size = source_pet.get("egg_size")
+        if egg_size is not None and not isinstance(egg_size, dict):
+            raise ValueError(f"{pet_id}.egg_size 必须是 table")
+        if egg_size is not None and not {"min", "mini_max", "huge_min", "max"}.issubset(egg_size):
+            raise ValueError(f"{pet_id}.egg_size 缺少边界字段：{egg_size!r}")
+
+        evolution_id = f"evolution_s5_{pet_id}"
+        pet = {
+            "id": pet_id,
+            "name": source_pet.get("title") or source_pet.get("name") or pet_id,
+            "number": str(number).zfill(3),
+            "evolution_id": evolution_id,
+            "stage": stage,
+            "egg_groups": [egg_group_names[group_id] for group_id in group_ids],
+            "egg_group_ids": group_ids,
+            "egg_weight": make_egg_weight(egg_size, pet_id) if egg_size is not None else None,
+            "attributes": attributes,
+        }
+        pets.append(pet)
+        seen_ids.add(pet_id)
+        used_group_ids.update(group_ids)
+        stage_by_id[pet_id] = stage
+        chains.setdefault(evolution_id, []).append(pet_id)
+        s5_initial_count += 1
+
+    if s5_initial_count == 0:
+        raise ValueError("S5Season.lua 没有初始形态记录")
 
     if not pets:
         raise ValueError("上游 Catalog.lua 没有可导入的完整蛋重数据")
@@ -191,13 +256,15 @@ def generate(source_root: Path) -> tuple[dict[str, Any], int]:
             "total_chains": len(chains),
             "tier_definition": "界面难度档位 1–10 按 total_range 分桶；阈值取原有相邻档位范围的中点。",
             "egg_groups": [egg_group_names[group_id] for group_id in sorted(used_group_ids)],
-            "mapping_method": "蛋重边界直接来自 Catalog.lua egg_size；间隔、区间计数与界面难度档位由转换脚本派生。",
+            "mapping_method": "Catalog.lua 与 S5Season.lua 提供精灵数据；蛋重间隔、区间计数与界面难度档位由转换脚本派生。",
             "note": "重量单位为克(g),显示时除以1000转换为kg,保留3位小数",
             "source": {
                 "repository": REPOSITORY_URL,
                 "commit": source_revision(source_root),
                 "catalog": CATALOG_RELATIVE_PATH.as_posix(),
                 "catalog_sha256": hashlib.sha256(catalog_path.read_bytes()).hexdigest(),
+                "s5_season": S5_SEASON_RELATIVE_PATH.as_posix(),
+                "s5_season_sha256": hashlib.sha256(s5_path.read_bytes()).hexdigest(),
                 "license": "CC BY-SA 4.0",
                 "license_url": LICENSE_URL,
             },
@@ -235,7 +302,7 @@ def main() -> int:
                 temporary_path.unlink()
 
     action = "预览" if args.dry_run else "已写入"
-    print(f"{action} {len(data['pets'])} 条带蛋重记录、{len(data['evolution_chains'])} 条进化链；跳过 {skipped} 条暂无完整蛋重的数据。")
+    print(f"{action} {len(data['pets'])} 条精灵记录、{len(data['evolution_chains'])} 条进化链；跳过 {skipped} 条暂无完整蛋重的数据。")
     if not args.dry_run:
         print(output_path)
     return 0

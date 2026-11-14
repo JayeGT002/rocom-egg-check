@@ -628,7 +628,7 @@ function App() {
               {results.length ? (
                 <div className="result-grid" role="list">
                   {results.map((pet) => {
-                    const tierColor = getTierColor(pet.egg_weight.tier)
+                    const tierColor = pet.egg_weight ? getTierColor(pet.egg_weight.tier) : null
                     const petAttributes = getPetAttributes(pet)
                     return <article className="pet-card" role="listitem" key={pet.id}>
                       <header className="pet-card-header">
@@ -642,12 +642,16 @@ function App() {
                             </div>
                           </div>
                         </div>
-                        <div className="pet-tier" style={{ background: tierColor.background, color: tierColor.foreground }}><strong>{pet.egg_weight.tier} 档</strong><span>{pet.egg_weight.tier_label}</span></div>
+                        {pet.egg_weight ? (
+                          <div className="pet-tier" style={{ background: tierColor.background, color: tierColor.foreground }}><strong>{pet.egg_weight.tier} 档</strong><span>{pet.egg_weight.tier_label}</span></div>
+                        ) : (
+                          <div className="pet-tier pet-tier-unavailable"><strong>无法</strong><span>孵蛋</span></div>
+                        )}
                       </header>
                       <div className="pet-groups">
                         {pet.egg_groups.map((group) => <span key={`group-${group}`} style={{ background: getEggGroupColor(group), color: '#ffffff' }}>{group}</span>)}
                       </div>
-                      <EggWeightScale weight={pet.egg_weight} />
+                      {pet.egg_weight ? <EggWeightScale weight={pet.egg_weight} /> : <div className="pet-weight egg-weight-unavailable"><strong>无法孵蛋</strong><span>没有精灵蛋重量范围</span></div>}
                     </article>
                   })}
                 </div>
